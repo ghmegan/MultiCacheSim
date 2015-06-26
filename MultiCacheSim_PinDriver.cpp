@@ -254,14 +254,19 @@ int main(int argc, char *argv[])
       exit(1);
     }
   
-    CacheFactory cfac = (CacheFactory)dlsym(chand, "Create");
+    CacheFactory cfac;
+    {
+      char buf[1024];
+      sprintf (buf, "%s_Create", ct);
+      fprintf(stderr, "Loading symbol \"%s\"\n", buf);
 
-    if( chand == NULL ){
+      cfac = (CacheFactory)dlsym(chand, buf);
 
-      fprintf(stderr,"Couldn't get the Create function\n");
-      fprintf(stderr,"dlerror: %s\n", dlerror());
-      exit(1);
-
+      if( chand == NULL ){
+	fprintf(stderr,"Couldn't get the Create function\n");
+	fprintf(stderr,"dlerror: %s\n", dlerror());
+	exit(1);
+      }
     }
 
     MultiCacheSim *c = new MultiCacheSim(stdout, csize, assoc, bsize, cfac);

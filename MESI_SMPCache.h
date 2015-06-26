@@ -1,3 +1,6 @@
+#ifndef MULTICACHESIM_MESI_SMPCACHE_H
+#define MULTICACHESIM_MESI_SMPCACHE_H
+
 #include "CacheCore.h"
 #include "SMPCache.h"
 #include "MESI_SMPCacheState.h"
@@ -66,4 +69,17 @@ public:
   ~MESI_SMPCache();
 };
 
+extern "C" {
 
+  static SMPCache 
+  *MESI_SMPCache_Create(int num, std::vector<SMPCache*> *cvec, 
+			int csize, int casso, int bs, int addrble, 
+			const char *repl, bool skw)
+  {
+    return new MESI_SMPCache(num,cvec,csize,casso,bs,addrble,repl,skw);
+  }
+};
+
+
+
+#endif

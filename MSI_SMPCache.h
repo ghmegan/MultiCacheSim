@@ -1,3 +1,6 @@
+#ifndef MULTICACHESIM_MSI_SMPCACHE_H
+#define MULTICACHESIM_MSI_SMPCACHE_H
+
 #include "CacheCore.h"
 #include "SMPCache.h"
 #include "MSI_SMPCacheState.h"
@@ -69,6 +72,21 @@ public:
 
   //Destructor
   ~MSI_SMPCache();
+
 };
 
 
+extern "C" {
+
+  static SMPCache *MSI_SMPCache_Create(int num, 
+				       std::vector<SMPCache*> *cvec, 
+				       int csize, int casso, 
+				       int bs, int addrble, 
+				       const char *repl, bool skw)
+  {
+    return new MSI_SMPCache(num,cvec,csize,casso,bs,addrble,repl,skw);
+  }
+
+};
+
+#endif

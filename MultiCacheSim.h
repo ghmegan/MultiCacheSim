@@ -1,3 +1,6 @@
+#ifndef MULTICACHESIM_MULTICACHESIM_H
+#define MULTICACHESIM_MULTICACHESIM_H
+
 #include "CacheInterface.h"
 #include "SMPCache.h"
 
@@ -10,10 +13,9 @@
 #include "pin.H"
 #endif
   
-class MultiCacheSim : public CacheInterface{
+class MultiCacheSim : public CacheInterface {
 
 public:
-
 
   //FIELDS
   //Number of Caches in the multicachesim
@@ -23,7 +25,11 @@ public:
   std::vector<SMPCache * > allCaches;
 
   //The lock that protects the vector so it isn't corrupted by concurrent updates
+  #ifndef PIN
+  pthread_mutex_t allCachesLock;
+  #else
   PIN_LOCK allCachesLock;
+  #endif
 
   //Cache Parameters
   int cache_size;
@@ -60,3 +66,6 @@ public:
   ~MultiCacheSim();
 
 };
+
+
+#endif

@@ -1,9 +1,13 @@
-#include "MultiCacheSim.h"
+#include "CacheMaker.h"
 #include <stdlib.h>
 #include <ctime>
 #include <dlfcn.h>
 
-#define NUM_CACHES 16 
+#define NUM_THREADS 16 
+#define NUM_CPUS 4
+#define CACHE_SIZE 32767
+#define BLOCK_SIZE 64
+#define ASSOC 8
 
 std::vector<MultiCacheSim *>mcs;
 
@@ -25,46 +29,54 @@ void *concurrent_accesses(void*np){
       }
     }
   }
+  return NULL;
 }
 
 
 int main(int argc, char** argv){
   srand(time(NULL));
 
-  pthread_t tasks[NUM_CACHES];
+  pthread_t tasks[NUM_THREADS];
 
+  //Invoke this program with a comman separated list of all
+  //coherence protocols to be used.
   char *ct = strtok(argv[1],","); 
+
   while(ct != NULL){
-    void *chand = dlopen( ct, RTLD_LAZY | RTLD_LOCAL );
-    if( chand == NULL ){
-      fprintf(stderr,"Couldn't Load %s\n", argv[1]);
-      fprintf(stderr,"dlerror: %s\n", dlerror());
-      exit(1);
-    }
-  
-    CacheFactory cfac = (CacheFactory)dlsym(chand, "Create");
-  
-    if( chand == NULL ){
-      fprintf(stderr,"Couldn't get the Create function\n");
-      fprintf(stderr,"dlerror: %s\n", dlerror());
-      exit(1);
-    }
-  
-    MultiCacheSim *c = new MultiCacheSim(stdout, 32767, 8, 32, cfac);
-    c->createNewCache();//CPU 1
-    c->createNewCache();//CPU 2
-    c->createNewCache();//CPU 3
-    c->createNewCache();//CPU 4
-    mcs.push_back(c);
 
+    CacheMaker::protocol_t proto;
+    proto = CacheMaker::Str2Proto(std::string(ct));
+
+    fprintf(stderr, "Making multicache for protocol %s [code=%d]\n",
+	    ct, proto);
+
+    CacheMaker cmk;
+    
+    if (!cmk.SetProtocol(proto)) {
+      fprintf (stderr, "Could not set protocol %s... exiting\n", ct);
+      exit(1);
+    }
+
+    cmk.SetBlockSize(BLOCK_SIZE);
+    cmk.SetCacheSize(CACHE_SIZE);
+    cmk.SetAssoc(ASSOC);
+    cmk.SetNumCPUs(NUM_CPUS);
+
+    MultiCacheSim *newmcs = cmk.Make();
+    if (newmcs == NULL) {
+      fprintf (stderr, "Problem making new cache... exiting\n");
+      exit(1);
+    }
+    mcs.push_back(newmcs);
+   
     ct = strtok(NULL,",");
-  }
+   }
 
-  for(int i = 0; i < NUM_CACHES; i++){
+  for(int i = 0; i < NUM_THREADS; i++){
     pthread_create(&(tasks[i]), NULL, concurrent_accesses, (void*)(new int(i)));
   }
   
-  for(int i = 0; i < NUM_CACHES; i++){
+  for(int i = 0; i < NUM_THREADS; i++){
     pthread_join(tasks[i], NULL);
   }
 
@@ -72,7 +84,7 @@ int main(int argc, char** argv){
   for(i = mcs.begin(), e = mcs.end(); i != e; i++){ 
     fprintf(stderr,"%s",(*i)->Identify());
     fprintf(stderr,"--------------------------------\n");
-    (*i)->dumpStatsForAllCaches();
+    (*i)->dumpStatsForAllCaches(false);
     fprintf(stderr,"********************************\n");
   }
 }
