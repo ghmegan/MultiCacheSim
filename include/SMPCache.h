@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-class SMPCache{
+class SMPCache {
 
 public:
   unsigned long CPUId;
@@ -57,6 +57,13 @@ public:
 
 };
 
-typedef SMPCache *(*CacheFactory)(int, SMPCache::cachev_t*, int, int, int, int, const char *, bool);
+typedef SMPCache *(*CacheFactory)(int, //cpuid
+				  SMPCache::cachev_t*, //cache vector
+				  int, //cache size
+				  int, //associativity
+				  int, //block size
+				  int, //addressable unit (e.g. 1 byte)
+				  const char *, //replacement policy
+				  bool); //is skew cache?
 
 #endif

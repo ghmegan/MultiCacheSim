@@ -2,7 +2,11 @@
 #include "MESI_SMPCache.h"
 #include "MSI_SMPCache.h"
 
-MultiCacheSim::MultiCacheSim(FILE *cachestats, int size, int assoc, int bsize, CacheFactory c){
+MultiCacheSim::MultiCacheSim(FILE *cachestats, 
+			     int size, 
+			     int assoc, 
+			     int bsize, 
+			     CacheFactory c){
 
   cacheFactory = c;
   CacheStats = cachestats;
@@ -19,17 +23,6 @@ MultiCacheSim::MultiCacheSim(FILE *cachestats, int size, int assoc, int bsize, C
 
 }
 
-SMPCache *MultiCacheSim::findCacheByCPUId(unsigned int CPUid){
-    std::vector<SMPCache *>::iterator cacheIter = allCaches.begin();
-    std::vector<SMPCache *>::iterator cacheEndIter = allCaches.end();
-    for(; cacheIter != cacheEndIter; cacheIter++){
-      if((*cacheIter)->CPUId == CPUid){
-        return (*cacheIter);
-      }
-    }
-    return NULL;
-} 
-  
 void MultiCacheSim::dumpStatsForAllCaches(bool concise){
    
     std::vector<SMPCache *>::iterator cacheIter = allCaches.begin();
@@ -55,7 +48,16 @@ void MultiCacheSim::createNewCache(){
     #endif
 
     SMPCache * newcache;
-    newcache = this->cacheFactory(num_caches++, &allCaches, cache_size, cache_assoc, cache_bsize, 1, "LRU", false);
+    int cpuid = num_caches;
+    num_caches++;
+    newcache = this->cacheFactory(cpuid, 
+				  &allCaches, 
+				  cache_size, 
+				  cache_assoc, 
+				  cache_bsize, 
+				  1, 
+				  "LRU", 
+				  false);
     allCaches.push_back(newcache);
 
 
@@ -120,11 +122,6 @@ int MultiCacheSim::getStateAsInt(unsigned long tid, unsigned long addr){
   }
   return cacheToWrite->getStateAsInt(addr);
 
-}
-
-int MultiCacheSim::tidToCPUId(int tid){
-    //simple for now, perhaps we want to be fancier
-    return tid % num_caches; 
 }
 
 char *MultiCacheSim::Identify(){

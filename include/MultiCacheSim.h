@@ -19,9 +19,10 @@ public:
   int num_caches;
 
   //The vector that contains the caches
-  std::vector<SMPCache * > allCaches;
+  SMPCache::cachev_t allCaches;
 
-  //The lock that protects the vector so it isn't corrupted by concurrent updates
+  //The lock that protects the cache vector so 
+  //it isn't corrupted by concurrent updates
   #ifndef PIN
   pthread_mutex_t allCachesLock;
   #else
@@ -39,8 +40,9 @@ public:
   CacheFactory cacheFactory;
   //METHODS
   //Constructor
-  //MultiCacheSim(FILE *cachestats,int size, int assoc, int bsize);
-  MultiCacheSim(FILE *cachestats,int size, int assoc, int bsize, CacheFactory c);
+  MultiCacheSim(FILE *cachestats, 
+		int size, int assoc, int bsize, 
+		CacheFactory c);
 
   //Adds a cache to the multicachesim
   void createNewCache();
@@ -51,10 +53,18 @@ public:
   void dumpStatsForAllCaches(bool concise);
 
   //Utility Function to get the cache object that has the specified CPUid
-  SMPCache *findCacheByCPUId(unsigned int CPUid);
+  SMPCache *findCacheByCPUId(unsigned int CPUid)
+  { 
+    if (CPUid >= allCaches.size()) return NULL;
+    return allCaches[CPUid];
+  }
+    
 
   //Translate from program threadID to multicachesim CPUId
-  int tidToCPUId(int tid);
+  int tidToCPUId(int tid)
+  {
+    return tid % num_caches; 
+  }
 
   char *Identify();
   int getStateAsInt(unsigned long tid, unsigned long addr);
