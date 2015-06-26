@@ -1,6 +1,6 @@
 #include "SMPCache.h"
 
-SMPCache::SMPCache(int cpuid, std::vector<SMPCache * > * cacheVector){
+SMPCache::SMPCache(int cpuid, cachev_t* cacheVector){
 
   CPUId = cpuid;
   allCaches = cacheVector;
@@ -41,7 +41,7 @@ void SMPCache::conciseDumpStatsToFile(FILE* outFile){
 }
 
 void SMPCache::dumpStatsToFile(FILE* outFile){
-  fprintf(outFile, "-----Cache %lu-----\n",CPUId);
+  fprintf(outFile, "-----Cache %lu of %lu -----\n",CPUId, allCaches->size());
 
   fprintf(outFile, "Read Hits:                   %d\n",numReadHits);
   fprintf(outFile, "Read Misses:                 %d\n",numReadMisses);
@@ -59,14 +59,4 @@ void SMPCache::dumpStatsToFile(FILE* outFile){
 
 }
 
-int SMPCache::getCPUId(){
-  return CPUId;
-}
 
-int SMPCache::getStateAsInt(unsigned long addr){
-  return (int)this->cache->findLine(addr)->getState();
-}
-
-std::vector<SMPCache * > *SMPCache::getCacheVector(){
-  return allCaches;
-}

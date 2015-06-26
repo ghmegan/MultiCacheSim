@@ -9,6 +9,10 @@
 class MSI_SMPCache : public SMPCache{
 
 public:
+
+  //The actual SESC cache object
+  CacheGeneric<StateGeneric<> > *cache;
+
   /*First we define a couple of helper classes that 
    * carry data between methods in our main class*/
   class RemoteReadService{
@@ -51,6 +55,8 @@ public:
                int caddressable, 
                const char * repPol, 
                bool cskew);
+
+  virtual int getStateAsInt(unsigned long addr);
 
   //Readline performs a read, and uses readRemoteAction to 
   //check for data in other caches

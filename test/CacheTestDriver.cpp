@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ctime>
 #include <dlfcn.h>
+#include <string.h>
 
 #define NUM_THREADS 16 
 #define NUM_CPUS 4

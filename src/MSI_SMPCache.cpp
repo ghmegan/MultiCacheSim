@@ -1,7 +1,7 @@
 #include "MSI_SMPCache.h"
 
 MSI_SMPCache::MSI_SMPCache(int cpuid, 
-                           std::vector<SMPCache * > * cacheVector,
+                           cachev_t* cacheVector,
                            int csize, 
                            int cassoc, 
                            int cbsize, 
@@ -20,6 +20,10 @@ MSI_SMPCache::MSI_SMPCache(int cpuid,
                                             cskew);
   cache = (CacheGeneric<StateGeneric<> >*)c; 
 
+}
+
+int MSI_SMPCache::getStateAsInt(unsigned long addr){
+  return (int)this->cache->findLine(addr)->getState();
 }
 
 void MSI_SMPCache::fillLine(uint32_t addr, uint32_t msi_state){

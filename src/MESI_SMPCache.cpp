@@ -1,12 +1,28 @@
 #include "MESI_SMPCache.h"
 
-MESI_SMPCache::MESI_SMPCache(int cpuid, std::vector<SMPCache * > * cacheVector,
-                 int csize, int cassoc, int cbsize, int caddressable, const char * repPol, bool cskew) : 
-               SMPCache(cpuid,cacheVector){
+MESI_SMPCache::MESI_SMPCache(int cpuid, 
+			     cachev_t* cacheVector,
+			     int csize, 
+			     int cassoc, 
+			     int cbsize, 
+			     int caddressable, 
+			     const char* repPol, 
+			     bool cskew) : 
+               SMPCache(cpuid,cacheVector)
+{
   fprintf(stderr,"Making a MESI cache with cpuid %d\n",cpuid);
-  CacheGeneric<MESI_SMPCacheState> *c = CacheGeneric<MESI_SMPCacheState>::create(csize, cassoc, cbsize, caddressable, repPol, cskew);
+  CacheGeneric<MESI_SMPCacheState> *c = 
+    CacheGeneric<MESI_SMPCacheState>::create(csize, 
+					     cassoc, 
+					     cbsize, 
+					     caddressable, 
+					     repPol, 
+					     cskew);
   cache = (CacheGeneric<StateGeneric<> >*)c; 
+}
 
+int MESI_SMPCache::getStateAsInt(unsigned long addr){
+  return (int)this->cache->findLine(addr)->getState();
 }
 
 void MESI_SMPCache::fillLine(uint32_t addr, uint32_t mesi_state){

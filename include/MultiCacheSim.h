@@ -1,11 +1,8 @@
 #ifndef MULTICACHESIM_MULTICACHESIM_H
 #define MULTICACHESIM_MULTICACHESIM_H
 
-#include "CacheInterface.h"
+#include <vector>
 #include "SMPCache.h"
-
-#include "MESI_SMPCache.h"
-#include "MSI_SMPCache.h"
 
 #ifndef PIN
 #include <pthread.h>
@@ -13,7 +10,7 @@
 #include "pin.H"
 #endif
   
-class MultiCacheSim : public CacheInterface {
+class MultiCacheSim {
 
 public:
 

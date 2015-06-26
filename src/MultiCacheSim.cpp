@@ -1,4 +1,6 @@
 #include "MultiCacheSim.h"
+#include "MESI_SMPCache.h"
+#include "MSI_SMPCache.h"
 
 MultiCacheSim::MultiCacheSim(FILE *cachestats, int size, int assoc, int bsize, CacheFactory c){
 
