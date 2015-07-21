@@ -2,12 +2,15 @@
 OBJDIR=obj/
 SRCDIR=src/
 TESTDIR=test/
+LIBDIR=lib/
 
 TESTS = CacheTestDriver.x
 
 MY_CFLAGS = -Iinclude -Wall -Wno-unused-function -fPIC -O2 -g
 
-MY_LIBS = -lpthread -ldl
+LIBMCS = libmcaches.a 
+
+MY_LIBS = -lpthread -ldl -L$(LIBDIR) -lmcaches
 
 OBJS= 	$(OBJDIR)SMPCache.o $(OBJDIR)MultiCacheSim.o \
 	$(OBJDIR)CacheCore.o $(OBJDIR)Snippets.o \
@@ -16,12 +19,18 @@ OBJS= 	$(OBJDIR)SMPCache.o $(OBJDIR)MultiCacheSim.o \
 
 all: $(OBJDIR) $(OBJS) $(TESTS)
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+$(LIBDIR):
+	mkdir -p $@
 
-%.x: $(TESTDIR)%.cpp $(OBJS)
+$(OBJDIR):
+	mkdir -p $@
+
+$(LIBMCS): $(LIBDIR) $(OBJS)
+	ar rcs $(LIBDIR)$@ $(OBJS)
+
+%.x: $(TESTDIR)%.cpp $(LIBMCS)
 	g++ $(MY_CFLAGS) -c $(TESTDIR)$*.cpp -o $(OBJDIR)$*.o
-	g++  -o $*.x $(OBJS) $(OBJDIR)$*.o $(MY_LIBS)
+	g++  -o $*.x $(OBJDIR)$*.o $(MY_LIBS)
 
 $(OBJDIR)%.o: $(SRCDIR)%.cpp
 	g++ $(MY_CFLAGS) -c $(SRCDIR)$*.cpp -o $(OBJDIR)$*.o
@@ -33,7 +42,8 @@ clean: tidy
 	rm -f $(OBJDIR)*.o
 
 scrub: clean
-	rm -f $(OBJDIR)
+	rm -rf $(OBJDIR)
+	rm -rf $(LIBDIR)
 	rm -f $(TESTS)
 
 .FORCE:

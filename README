@@ -1,5 +1,29 @@
 MultiCacheSim: A coherent multiprocessor cache simulator.
 =========================================================
+
+Modified version of MultiCacheSim
+
+Megan Grodowitz 2015
+------------------------
+Oak Ridge National Labs
+------------------------
+
+See the bottom of this README for the original README and license information
+
+This code was modified to be used as a C library to provide a cache interface
+
+Currently, the pintool functionality is untested (and probably broken), since
+the library interface is in development. The plan is to restore the pintool
+functionality so that this can be linked into simulators or models as well as
+used on the actual application being run.
+
+The library API will be documented separately once it is complete.
+
+
+=========================================================
+Begin Original README
+=========================================================
+
 Brandon Lucia 2009-2011
 -----------------------
 University of Washington

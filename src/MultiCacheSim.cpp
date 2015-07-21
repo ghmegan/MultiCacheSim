@@ -23,19 +23,13 @@ MultiCacheSim::MultiCacheSim(FILE *cachestats,
 
 }
 
+//concise print out is removed for now. Will add back later. Maybe. Don't you judge me.
 void MultiCacheSim::dumpStatsForAllCaches(bool concise){
    
     std::vector<SMPCache *>::iterator cacheIter = allCaches.begin();
     std::vector<SMPCache *>::iterator cacheEndIter = allCaches.end();
     for(; cacheIter != cacheEndIter; cacheIter++){
-      if(!concise){
-        (*cacheIter)->dumpStatsToFile(CacheStats);
-      }else{
-
-    fprintf(CacheStats,"CPUId, numReadHits, numReadMisses, numReadOnInvalidMisses, numReadRequestsSent, numReadMissesServicedByOthers, numReadMissesServicedByShared, numReadMissesServicedByModified, numWriteHits, numWriteMisses, numWriteOnSharedMisses, numWriteOnInvalidMisses, numInvalidatesSent\n");
-
-        (*cacheIter)->conciseDumpStatsToFile(CacheStats);
-      }
+      (*cacheIter)->dumpStatsToFile(CacheStats);
     }
 }
 

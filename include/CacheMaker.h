@@ -18,14 +18,35 @@ class CacheMaker {
     MESI_SMPCache = 2
   } protocol_t;
 
-  static protocol_t Str2Proto( const std::string &pstr ) {
-    if (pstr.compare(std::string("MSI_SMPCache")) == 0) {
-      return MSI_SMPCache;
+  //Because C++ has const... haha
+  static const int protocol_t_max = 2;
+
+  static std::string Proto2Str( protocol_t proto ) {
+    switch (proto) {
+    case MSI_SMPCache: return std::string("MSI_SMPCache");
+    case MESI_SMPCache: return std::string("MESI_SMPCache");
+    default: return std::string("INVALID");
     }
-    else if (pstr.compare(std::string("MESI_SMPCache")) == 0) {
-      return MESI_SMPCache;
+  }
+
+  static protocol_t Str2Proto( const std::string &pstr ) {
+    for (int proto = 1; proto <= protocol_t_max; proto++) {
+      if (pstr.compare(Proto2Str((protocol_t)proto)) == 0) {
+	return (protocol_t)proto;
+      }
     }
     return INVALID;
+  }
+
+  static std::string ProtoList() {
+    std::string ret;
+    for (int proto = 1; proto <= protocol_t_max; proto++) {
+      if (proto > 1) {
+	ret += ", ";
+      }
+      ret += Proto2Str((protocol_t)proto);
+    }
+    return ret;
   }
 
   bool SetProtocol(protocol_t proto) {

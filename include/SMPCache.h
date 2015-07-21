@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 class SMPCache {
 
@@ -18,22 +19,56 @@ public:
   cachev_t *getCacheVector() { return allCaches; }  
 
   //Stats about the events the cache saw during execution
-  int numReadHits;
-  int numReadMisses;
-
-  int numReadOnInvalidMisses;
-  int numReadRequestsSent;
-  int numReadMissesServicedByOthers;
-  int numReadMissesServicedByShared;
-  int numReadMissesServicedByModified;
-
-  int numWriteHits;
-  int numWriteMisses;
-
-  int numWriteOnSharedMisses;
-  int numWriteOnInvalidMisses;
-  int numInvalidatesSent;
+  typedef struct {
+    int ReadHits;
+    int ReadMisses;
+    
+    int ReadOnInvalidMisses;
+    int ReadRequestsSent;
+    int ReadMissesServicedByOthers;
+    int ReadMissesServicedByShared;
+    int ReadMissesServicedByModified;
+    
+    int WriteHits;
+    int WriteMisses;
+    int WriteBacks;
+    
+    int WriteOnSharedMisses;
+    int WriteOnInvalidMisses;
+    int InvalidatesSent;
+  } stats_t;
   
+  stats_t stats;
+
+  stats_t save_stats;
+  void mark_stats() {
+    memcpy(&save_stats, &stats, sizeof(stats_t));
+  }
+
+  void diff_stats(stats_t* diff) {
+#define DODIFF(_str_) diff->_str_ = stats._str_ - save_stats._str_
+    
+    DODIFF(ReadHits);
+    DODIFF(ReadMisses);
+    
+    DODIFF(ReadOnInvalidMisses);
+    DODIFF(ReadRequestsSent);
+    DODIFF(ReadMissesServicedByOthers);
+    DODIFF(ReadMissesServicedByShared);
+    DODIFF(ReadMissesServicedByModified);
+    
+    DODIFF(WriteHits);
+    DODIFF(WriteMisses);
+    DODIFF(WriteBacks);
+    
+    DODIFF(WriteOnSharedMisses);
+    DODIFF(WriteOnInvalidMisses);
+    DODIFF(InvalidatesSent);
+  }
+
+  
+
+
   SMPCache(int cpuid, cachev_t* cacheVector);
 
   //Readline performs a read, and uses readRemoteAction to 
@@ -50,10 +85,15 @@ public:
   virtual char *Identify() = 0;
 
   //Dump the stats for this cache to outFile
-  virtual void dumpStatsToFile(FILE* outFile);
-  virtual void conciseDumpStatsToFile(FILE* outFile);
-  
+  virtual void dumpStatsToFile(FILE* outFile, 
+			       stats_t* in_stats = NULL,
+			       bool trunc = false);
+
   virtual int getStateAsInt(unsigned long addr) = 0;
+
+
+    
+
 
 };
 

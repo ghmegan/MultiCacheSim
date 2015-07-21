@@ -147,6 +147,9 @@ typename CacheAssoc<State, Addr_t, Energy>::Line *CacheAssoc<State, Addr_t, Ener
 {
   Addr_t tag = calcTag(addr);
 
+  //printf ("findLinePrivate: addr %x, tag %x, content index %d\n",
+  //	   addr, tag, calcIndex4Tag(tag));
+
   GI(Energy, goodInterface); // If modeling energy. Do not use this
                              // interface directly. use readLine and
                              // writeLine instead. If it is called
@@ -171,6 +174,9 @@ typename CacheAssoc<State, Addr_t, Energy>::Line *CacheAssoc<State, Addr_t, Ener
   {
     Line **l = theSet + 1;
     while(l < setEnd) {
+      //printf ("findLinePrivate: checking set item: tag is %x, valid? %d\n",
+      //      (*l)->getTag(), (*l)->isValid());
+
       if ((*l)->getTag() == tag) {
         lineHit = l;
         break;
@@ -179,8 +185,10 @@ typename CacheAssoc<State, Addr_t, Energy>::Line *CacheAssoc<State, Addr_t, Ener
     }
   }
 
-  if (lineHit == 0)
+  if (lineHit == 0) {
+    //printf ("findLinePrivate: line did not hit\n");
     return 0;
+  }
 
   I((*lineHit)->isValid());
 
