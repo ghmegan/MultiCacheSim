@@ -60,16 +60,20 @@ public:
 
   //Readline performs a read, and uses readRemoteAction to 
   //check for data in other caches
-  virtual void readLine(uint32_t rdPC, uint32_t addr);//SMPCache Interface Function
+  //SMPCache Interface Function
+  virtual void readLine(uint32_t rdPC, uint32_t addr, 
+			uint32_t& memrd, uint32_t& wrback);
   virtual MSI_SMPCache::RemoteReadService readRemoteAction(uint32_t addr);
 
   //Writeline performs a write, and uses writeRemoteAction
   //to check for data in other caches
-  virtual void writeLine(uint32_t wrPC, uint32_t addr);//SMPCache Interface Function
+  //SMPCache Interface Function
+  virtual void writeLine(uint32_t wrPC, uint32_t addr, uint32_t& wrback);
   virtual MSI_SMPCache::InvalidateReply writeRemoteAction(uint32_t addr);
  
   //Fill line touches cache state, bringing addr's block in, and setting its state to msi_state 
-  virtual void fillLine(uint32_t addr, uint32_t msi_state);//SMPCache Interface Function
+  //SMPCache Interface Function
+  virtual void fillLine(uint32_t addr, uint32_t msi_state, uint32_t& wrback);
 
   virtual char *Identify();
  

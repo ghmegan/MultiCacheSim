@@ -5,13 +5,14 @@
 #include <string.h>
 #include <time.h>
 
-#define NUM_THREADS 8
-#define NUM_CPUS 4
-#define CACHE_SIZE 32767
+#define NUM_THREADS 1
+#define NUM_CPUS 1
+#define CACHE_SIZE 1024
+//#define CACHE_SIZE 32767
 //#define CACHE_SIZE 16383
-#define BLOCK_SIZE 64
-#define ASSOC 8
-#define ACCS_PER_TD 100000
+#define BLOCK_SIZE 16
+#define ASSOC 4
+#define ACCS_PER_TD 100
 
 //The cache simulator will not work if the address tags ever equal 0
 //The cache core code uses 0 as "invalid tag"
@@ -54,9 +55,10 @@ void do_single_cache_test() {
   MultiCacheSim* mc = mcs[mcs_idx];
   SMPCache* mycache = mc->findCacheByCPUId(mc->tidToCPUId(0));
 
-  SMPCache::stats_t cstats;
+  SMPCache::stat_vec_t cstats;
 
   unsigned long addr = BASE_ADDR;
+  uint32_t wrback, memrd;
 
   for(unsigned long i = 0; i < total_accs; i++){
     addr = (addr + BLOCK_SIZE);
@@ -66,14 +68,17 @@ void do_single_cache_test() {
     mycache->mark_stats();
 
     if(type == 0){
-      mycache->readLine(pc, addr);
+      mycache->readLine(pc, addr, memrd, wrback);
+      //if (memrd > 0) fprintf(stderr, "\t\t\tRD %x\n", memrd);
+      //if (wrback > 0) fprintf(stderr, "\t\t\tWR %x\n", wrback);
     }
     else{
-      mycache->writeLine(pc, addr);
+      mycache->writeLine(pc, addr, wrback);
+      //if (wrback > 0) fprintf(stderr, "\t\t\tWR %x\n", wrback);
     }
 
-    mycache->diff_stats(&cstats);
-    //mycache->dumpStatsToFile(stdout, &cstats, true);
+    mycache->diff_stats(cstats);
+    //mycache->dumpStatsToFile(stdout, cstats, true);
   }
 
   diff = clock() - start;
@@ -87,16 +92,18 @@ void *concurrent_accesses_fast(void* tidvp){
   MultiCacheSim* mc = mcs[mcs_idx];
   SMPCache* mycache = mc->findCacheByCPUId(mc->tidToCPUId(tid));
 
+  uint32_t memrd, wrback;
+
   for(int i = 0; i < ACCS_PER_TD; i++){
     unsigned long addr = BASE_ADDR; 
     unsigned long pc = rand() % 0xdeadbeff + 0xdeadbeef; 
     unsigned long type = rand() % 2;
 
     if(type == 0){
-      mycache->readLine(pc, addr);
+      mycache->readLine(pc, addr, memrd, wrback);
     }
     else{
-      mycache->writeLine(pc, addr);
+      mycache->writeLine(pc, addr, wrback);
     }
   }
   return NULL;
@@ -217,9 +224,9 @@ int main(int argc, char** argv){
    }
 
   for (mcs_idx = 0; mcs_idx < mcs.size(); mcs_idx++) {
-    do_slow_concurrent_test();
     //do_slow_concurrent_test();
-    do_fast_concurrent_test();
+    //do_slow_concurrent_test();
+    //do_fast_concurrent_test();
     //do_fast_concurrent_test();
     //do_single_cache_test();
     do_single_cache_test();

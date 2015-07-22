@@ -47,9 +47,31 @@ public:
   //Adds a cache to the multicachesim
   void createNewCache();
  
-  //These three functions implement the CacheInterface interface 
-  void readLine(unsigned long tid, unsigned long rdPC, unsigned long addr);
-  void writeLine(unsigned long tid, unsigned long wrPC, unsigned long addr);
+  //These functions implement the CacheInterface interface 
+
+  void readLine(unsigned long tid, 
+		unsigned long rdPC, 
+		unsigned long addr,
+		uint32_t& memrd,
+		uint32_t& wrback);
+
+  void writeLine(unsigned long tid, 
+		 unsigned long wrPC, 
+		 unsigned long addr, 
+		 uint32_t& wrback);
+
+  void readLine(unsigned long tid, unsigned long rdPC, unsigned long addr)
+  {
+    uint32_t memrd, wrback;
+    this->readLine(tid, rdPC, addr, memrd, wrback);
+  }
+  void writeLine(unsigned long tid, unsigned long wrPC, unsigned long addr)
+  {
+    uint32_t wrback;
+    this->writeLine(tid, wrPC, addr, wrback);
+  }
+
+
   void dumpStatsForAllCaches(bool concise);
 
   //Utility Function to get the cache object that has the specified CPUid

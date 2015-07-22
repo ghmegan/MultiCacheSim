@@ -25,15 +25,18 @@ int MESI_SMPCache::getStateAsInt(unsigned long addr){
   return (int)this->cache->findLine(addr)->getState();
 }
 
-void MESI_SMPCache::fillLine(uint32_t addr, uint32_t mesi_state){
+void MESI_SMPCache::fillLine(uint32_t addr, uint32_t mesi_state, uint32_t& wrback){
   MESI_SMPCacheState *st = (MESI_SMPCacheState *)cache->findLine2Replace(addr); //this gets the contents of whateverline this would go into
   if(st==0){
     return;
   }
 
-  //If this cache line is valid, write it back
-  if (st->isValid())
-    stats.WriteBacks++;
+  //If this cache line is modified, write it back
+  if (st->getState() == MESI_MODIFIED) {
+    //Get the line address of the replaced line
+    wrback = cache->calcAddr4Tag(st->getTag());
+    stats[WriteBacks]++;
+  }
 
   st->setTag(cache->calcTag(addr));
   st->changeStateTo((MESIState_t)mesi_state);
@@ -81,53 +84,58 @@ MESI_SMPCache::RemoteReadService MESI_SMPCache::readRemoteAction(uint32_t addr){
   return MESI_SMPCache::RemoteReadService(false,false);
 }
 
-void MESI_SMPCache::readLine(uint32_t rdPC, uint32_t addr){
+void MESI_SMPCache::readLine(uint32_t rdPC, uint32_t addr,
+			     uint32_t& memrd, uint32_t& wrback){
 
   MESI_SMPCacheState *st = (MESI_SMPCacheState *)cache->findLine(addr);    
   //fprintf(stderr,"In MESI ReadLine\n");
   if(!st || (st && !(st->isValid())) ){//Read Miss -- i need to look in other peoples' caches for this data
     
-    stats.ReadMisses++;
+    stats[ReadMisses]++;
 
 
     if(st){
-      stats.ReadOnInvalidMisses++;
+      stats[ReadOnInvalidMisses]++;
     }
 
     //Query the other caches and get a remote read service object.
     MESI_SMPCache::RemoteReadService rrs = readRemoteAction(addr);
-    stats.ReadRequestsSent++;
+    stats[ReadRequestsSent]++;
       
     MESIState_t newMesiState = MESI_INVALID;
   
     if(rrs.providedData){
    
-      stats.ReadMissesServicedByOthers++;
+      stats[ReadMissesServicedByOthers]++;
 
       if(rrs.isShared){
  
-        stats.ReadMissesServicedByShared++;
+        stats[ReadMissesServicedByShared]++;
          
       }else{ 
       
-        stats.ReadMissesServicedByModified++;
+        stats[ReadMissesServicedByModified]++;
       } 
 
       newMesiState = MESI_SHARED;
 
     }else{
 
+      //Bring line in from memory if not found on chip
+      stats[ReadChipMisses]++;
+      memrd = cache->calcAddr4Tag(cache->calcTag(addr));
+
       newMesiState = MESI_EXCLUSIVE;
 
     }
     //Fill the line
     //fprintf(stderr,"MESI ReadLine: Miss -- calling fill line\n");
-    fillLine(addr,newMesiState); 
+    fillLine(addr,newMesiState,wrback); 
 
       
   }else{ //Read Hit
 
-    stats.ReadHits++; 
+    stats[ReadHits]++; 
     return; 
 
   }
@@ -168,40 +176,41 @@ MESI_SMPCache::InvalidateReply MESI_SMPCache::writeRemoteAction(uint32_t addr){
 }
 
 
-void MESI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr){
+void MESI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr,
+			      uint32_t& wrback){
 
   MESI_SMPCacheState * st = (MESI_SMPCacheState *)cache->findLine(addr);    
     
   if(!st || (st && !(st->isValid())) ){ //Write Miss
     
-    stats.WriteMisses++;
+    stats[WriteMisses]++;
   
     if(st){
-      stats.WriteOnInvalidMisses++;
+      stats[WriteOnInvalidMisses]++;
     }
   
     MESI_SMPCache::InvalidateReply inv_ack = writeRemoteAction(addr);
-    stats.InvalidatesSent++;
+    stats[InvalidatesSent]++;
 
     //Fill the line with the new write
-    fillLine(addr,MESI_MODIFIED);
+    fillLine(addr,MESI_MODIFIED,wrback);
     return;
 
   }else if(st->getState() == MESI_SHARED ||
            st->getState() == MESI_EXCLUSIVE){ //Coherence Miss
     
-    stats.WriteMisses++;
-    stats.WriteOnSharedMisses++;
+    stats[WriteMisses]++;
+    stats[WriteOnSharedMisses]++;
       
     MESI_SMPCache::InvalidateReply inv_ack = writeRemoteAction(addr);
-    stats.InvalidatesSent++;
+    stats[InvalidatesSent]++;
 
     st->changeStateTo(MESI_MODIFIED);
     return;
 
   }else{ //Write Hit
 
-    stats.WriteHits++;
+    stats[WriteHits]++;
     return;
 
   }

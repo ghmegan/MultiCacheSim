@@ -26,7 +26,9 @@ int MSI_SMPCache::getStateAsInt(unsigned long addr){
   return (int)this->cache->findLine(addr)->getState();
 }
 
-void MSI_SMPCache::fillLine(uint32_t addr, uint32_t msi_state){
+void MSI_SMPCache::fillLine(uint32_t addr, uint32_t msi_state, uint32_t& wrback){
+
+  wrback = 0;
 
   //this gets the state of whatever line this address maps to 
   MSI_SMPCacheState *st = (MSI_SMPCacheState *)cache->findLine2Replace(addr); 
@@ -37,8 +39,11 @@ void MSI_SMPCache::fillLine(uint32_t addr, uint32_t msi_state){
   }
 
   //If this cache line is modified, write it back
-  if (st->getState() == MSI_MODIFIED)
-    stats.WriteBacks++;
+  if (st->getState() == MSI_MODIFIED) {
+    //Get the line address of the replaced line
+    wrback = cache->calcAddr4Tag(st->getTag());
+    stats[WriteBacks]++;
+  }
 
   /*Set the tags to the tags for the newly cached block*/
   st->setTag(cache->calcTag(addr));
@@ -118,11 +123,14 @@ MSI_SMPCache::RemoteReadService MSI_SMPCache::readRemoteAction(uint32_t addr){
 }
 
 
-void MSI_SMPCache::readLine(uint32_t rdPC, uint32_t addr){
+void MSI_SMPCache::readLine(uint32_t rdPC, uint32_t addr, 
+			    uint32_t& memrd, uint32_t& wrback){
   /*
    *This method implements actions taken on a read access to address addr
    *at instruction rdPC
   */
+
+  memrd = 0;
 
   /*Get the state of the line to which this address maps*/
   MSI_SMPCacheState *st = 
@@ -132,13 +140,11 @@ void MSI_SMPCache::readLine(uint32_t rdPC, uint32_t addr){
   if(!st || (st && !(st->isValid())) ){
 
     /*Update event counter for read misses*/
-    stats.ReadMisses++;
+    stats[ReadMisses]++;
 
     if(st){
-
       /*Tag matched, but state was invalid*/
-      stats.ReadOnInvalidMisses++;
-
+      stats[ReadOnInvalidMisses]++;
     }
 
     /*Make the other caches snoop this access 
@@ -146,31 +152,34 @@ void MSI_SMPCache::readLine(uint32_t rdPC, uint32_t addr){
      *This is effectively putting the access on the bus.
     */
     MSI_SMPCache::RemoteReadService rrs = readRemoteAction(addr);
-    stats.ReadRequestsSent++;
+    stats[ReadRequestsSent]++;
     
     if(rrs.providedData){
-
       /*If it was shared or modified elsewhere,
        *the line was provided by another cache.
        *Update these counters to reflect that
       */
-      stats.ReadMissesServicedByOthers++;
+      stats[ReadMissesServicedByOthers]++;
 
       if(rrs.isShared){
-        stats.ReadMissesServicedByShared++;
+        stats[ReadMissesServicedByShared]++;
       }else{
-        stats.ReadMissesServicedByModified++;
+        stats[ReadMissesServicedByModified]++;
       }
-
     } 
+    else {
+      //Bring line in from memory if not found on chip
+      stats[ReadChipMisses]++;
+      memrd = cache->calcAddr4Tag(cache->calcTag(addr));
+    }
 
     /*Fill the line*/
-    fillLine(addr,MSI_SHARED); 
+    fillLine(addr,MSI_SHARED,wrback); 
       
   }else{
 
     /*Read Hit - any state but Invalid*/
-    stats.ReadHits++; 
+    stats[ReadHits]++; 
     return; 
 
   }
@@ -229,7 +238,7 @@ MSI_SMPCache::InvalidateReply MSI_SMPCache::writeRemoteAction(uint32_t addr){
 }
 
 
-void MSI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr){
+void MSI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr, uint32_t& wrback){
   /*This method implements actions taken when instruction wrPC
    *writes to memory location addr*/
 
@@ -242,13 +251,11 @@ void MSI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr){
    */ 
   if(!st || (st && !(st->isValid())) ){ 
 
-    stats.WriteMisses++;
+    stats[WriteMisses]++;
     
     if(st){
-
       /*We're writing to an invalid line*/
-      stats.WriteOnInvalidMisses++;
-
+      stats[WriteOnInvalidMisses]++;
     }
  
     /*
@@ -257,10 +264,10 @@ void MSI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr){
      * on the bus.
      */ 
     MSI_SMPCache::InvalidateReply inv_ack = writeRemoteAction(addr);
-    stats.InvalidatesSent++;
+    stats[InvalidatesSent]++;
 
     /*Fill the line with the new written block*/
-    fillLine(addr,MSI_MODIFIED);
+    fillLine(addr,MSI_MODIFIED,wrback);
 
     return;
 
@@ -269,14 +276,14 @@ void MSI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr){
      *miss.  We need to upgrade to Modified to write, and all other
      *copies must be invalidated
     */
-    stats.WriteMisses++;
+    stats[WriteMisses]++;
 
     /*Write-on-shared Coherence Misses*/
-    stats.WriteOnSharedMisses++;
+    stats[WriteOnSharedMisses]++;
 
     /*Let the other sharers snoop this write, and invalidate themselves*/
     MSI_SMPCache::InvalidateReply inv_ack = writeRemoteAction(addr);
-    stats.InvalidatesSent++;
+    stats[InvalidatesSent]++;
 
     /*Change the state of the line to Modified to reflect the write*/
     st->changeStateTo(MSI_MODIFIED);
@@ -285,7 +292,7 @@ void MSI_SMPCache::writeLine(uint32_t wrPC, uint32_t addr){
   }else{ //Write Hit
 
     /*Already have it writable: No coherence action required!*/
-    stats.WriteHits++;
+    stats[WriteHits]++;
 
     return;
 
